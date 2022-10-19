@@ -1,34 +1,33 @@
 /*
- * Copyright (c) 2022 The ZMK Contributors
+ * Copyright (c) 2023 The ZMK Contributors
  *
  * SPDX-License-Identifier: MIT
  */
 
 #define DT_DRV_COMPAT zmk_behavior_base_layer
 
-#include <device.h>
+#include <zephyr/device.h>
 #include <drivers/behavior.h>
-#include <logging/log.h>
 
-#include <zmk/keymap.h>
 #include <zmk/behavior.h>
-#include <zmk/events/endpoint_selection_changed.h>
-#include <zmk/events/ble_active_profile_changed.h>
-#include <zmk/profiles.h>
+#include <zmk/endpoints.h>
+#include <zmk/events/endpoint_changed.h>
+#include <zmk/keymap.h>
 
 #if IS_ENABLED(CONFIG_SETTINGS)
-#include <settings/settings.h>
+#include <zephyr/settings/settings.h>
 #endif
 
+#include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 struct base_layer_state {
-    uint8_t base_layer_by_profile[ZMK_PROFILE_COUNT];
+    uint8_t layer_by_enpoint[ZMK_ENDPOINT_COUNT];
 };
 
-static struct base_layer_state state = {.base_layer_by_profile = {0}};
+static struct base_layer_state state;
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 static int base_layer_settings_set(const char *name, size_t len, settings_read_cb read_cb,
@@ -38,8 +37,7 @@ static int base_layer_settings_set(const char *name, size_t len, settings_read_c
         if (len != sizeof(state)) {
             return -EINVAL;
         }
-        int rc = read_cb(cb_arg, &state, sizeof(state));
-        return MIN(rc, 0);
+        return MIN(read_cb(cb_arg, &state, sizeof(state)), 0);
     }
     return -ENOENT;
 }
@@ -51,7 +49,7 @@ static void base_layer_save_work_handler(struct k_work *work) {
 static struct k_work_delayable base_layer_save_work;
 struct settings_handler base_layer_settings_handler = {.name = "base_layer",
                                                        .h_set = base_layer_settings_set};
-#endif
+#endif /* IS_ENABLED(CONFIG_SETTINGS) */
 
 static int behavior_base_layer_init(const struct device *dev) {
 #if IS_ENABLED(CONFIG_SETTINGS)
@@ -66,7 +64,7 @@ static int behavior_base_layer_init(const struct device *dev) {
     k_work_init_delayable(&base_layer_save_work, base_layer_save_work_handler);
 
     settings_load_subtree("base_layer");
-#endif
+#endif /* IS_ENABLED(CONFIG_SETTINGS) */
 
     return 0;
 };
@@ -75,12 +73,16 @@ static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
     LOG_DBG("position %d layer %d", event.position, binding->param1);
 
-    const zmk_profile_index_t profile_index = zmk_current_profile_index();
+    const struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
+    const int endpoint_index = zmk_endpoint_instance_to_index(endpoint);
     const uint8_t layer = binding->param1;
 
-    state.base_layer_by_profile[profile_index] = layer;
+    state.layer_by_enpoint[endpoint_index] = layer;
     zmk_keymap_layer_to(layer);
-    LOG_INF("saved base layer %d for profile %d", layer, profile_index);
+
+    char endpoint_str[ZMK_ENDPOINT_STR_LEN];
+    zmk_endpoint_instance_to_str(endpoint, endpoint_str, sizeof(endpoint_str));
+    LOG_INF("saved base layer %d for endpoint %s", layer, endpoint_str);
 
 #if IS_ENABLED(CONFIG_SETTINGS)
     k_work_reschedule(&base_layer_save_work, K_MSEC(CONFIG_ZMK_SETTINGS_SAVE_DEBOUNCE));
@@ -96,25 +98,22 @@ static int on_keymap_binding_released(struct zmk_behavior_binding *binding,
 }
 
 static int base_layer_listener(const zmk_event_t *e) {
-    if (e == NULL) {
-        return ZMK_EV_EVENT_BUBBLE;
+    struct zmk_endpoint_changed *data = as_zmk_endpoint_changed(e);
+    if (data != NULL) {
+        const int endpoint_index = zmk_endpoint_instance_to_index(data->endpoint);
+        const uint8_t layer = state.layer_by_enpoint[endpoint_index];
+        zmk_keymap_layer_to(layer);
+
+        char endpoint_str[ZMK_ENDPOINT_STR_LEN];
+        zmk_endpoint_instance_to_str(data->endpoint, endpoint_str, sizeof(endpoint_str));
+        LOG_INF("restored base layer %d for endpoint %s", layer, endpoint_str);
     }
-
-    const zmk_profile_index_t profile_index = zmk_current_profile_index();
-    const uint8_t layer = state.base_layer_by_profile[profile_index];
-
-    zmk_keymap_layer_to(layer);
-    LOG_INF("restored base layer %d for profile %d", layer, profile_index);
 
     return ZMK_EV_EVENT_BUBBLE;
 }
 static ZMK_LISTENER(base_layer_listener, base_layer_listener);
 
-static ZMK_SUBSCRIPTION(base_layer_listener, zmk_endpoint_selection_changed);
-
-#if IS_ENABLED(CONFIG_ZMK_BLE)
-static ZMK_SUBSCRIPTION(base_layer_listener, zmk_ble_active_profile_changed);
-#endif
+static ZMK_SUBSCRIPTION(base_layer_listener, zmk_endpoint_changed);
 
 static const struct behavior_driver_api behavior_base_layer_driver_api = {
     .binding_pressed = on_keymap_binding_pressed,
