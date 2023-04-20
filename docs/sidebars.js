@@ -35,6 +35,7 @@ module.exports = {
       "behaviors/tap-dance",
       "behaviors/caps-word",
       "behaviors/key-repeat",
+      "behaviors/key-tap",
       "behaviors/reset",
       "behaviors/bluetooth",
       "behaviors/outputs",
