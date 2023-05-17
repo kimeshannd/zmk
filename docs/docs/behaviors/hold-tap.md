@@ -5,6 +5,7 @@ sidebar_label: Hold-Tap
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import AnimationPlayer from '@site/src/components/AnimationPlayer';
 
 ## Summary
 
@@ -12,28 +13,75 @@ Hold-tap is the basis for other behaviors such as layer-tap and mod-tap.
 
 Simply put, the hold-tap key will output the 'hold' behavior if it's held for a while, and output the 'tap' behavior when it's tapped quickly.
 
-### Hold-Tap
+### Flavors
 
-The graph below shows how the hold-tap decides between a 'tap' and a 'hold'.
+The 'flavor' of a hold-tap determines its behavior when it is tapped, held, and when another key is pressed while the hold-tap is undecided. For example, the [mod-tap](mod-tap.md) is a 'hold-preferred' hold-tap, while the [layer-tap](layers.md/#layer-tap) is of the 'tap-preferred' variety.
 
-![Simple behavior](../assets/hold-tap/case1_2.svg)
+<Tabs
+defaultValue="hold-preferred"
+values={[
+{label: 'Hold-Preferred', value: 'hold-preferred'},
+{label: 'Balanced', value: 'balanced'},
+{label: 'Tap-Preferred', value: 'tap-preferred'},
+{label: 'Tap-Unless-Interrupted', value: 'tap-unless-interrupted'},
+]}>
+
+<TabItem value="hold-preferred">
+
+The simplest flavor, 'hold-preferred', triggers the hold behavior when the [`tapping-term-ms`](#tapping-term-ms) has expired or another key is pressed.
+When the hold-tap key is released and the hold behavior has not been triggered, the tap behavior will trigger.
+
+<AnimationPlayer auto small name="hold_tap_comparison" />
 
 By default, the hold-tap is configured to also select the 'hold' functionality if another key is tapped while it's active:
 
-![Hold preferred behavior](../assets/hold-tap/case_hold_preferred.svg)
+<AnimationPlayer auto small name="hold_tap_interrupted" />
 
-We call this the 'hold-preferred' flavor of hold-taps. While this flavor may work very well for a ctrl/escape key, it's not very well suited for home-row mods or layer-taps. That's why there are two more flavors to choose from: 'tap-preferred' and 'balanced'.
+While this flavor may work very well for a ctrl/escape key, it's not very well suited for home-row mods or layer-taps. That's why there are more flavors to choose from: 'balanced', 'tap-preferred' and 'tap-unless-interrupted'.
 
-#### Flavors
+</TabItem>
 
-- The 'hold-preferred' flavor triggers the hold behavior when the `tapping-term-ms` has expired or another key is pressed.
-- The 'balanced' flavor will trigger the hold behavior when the `tapping-term-ms` has expired or another key is pressed and released.
-- The 'tap-preferred' flavor triggers the hold behavior when the `tapping-term-ms` has expired. Pressing another key within `tapping-term-ms` does not affect the decision.
-- The 'tap-unless-interrupted' flavor triggers a hold behavior only when another key is pressed before `tapping-term-ms` has expired. It triggers the tap behavior in all other situations.
+<TabItem value="balanced">
 
-When the hold-tap key is released and the hold behavior has not been triggered, the tap behavior will trigger.
+The 'balanced' flavor triggers the hold behavior when the [`tapping-term-ms`](#tapping-term-ms) has expired.
 
-![Hold-tap comparison](../assets/hold-tap/comparison.svg)
+<AnimationPlayer auto small name="balanced_comparison" />
+
+Alternatively, if another key is pressed while the 'balanced' hold-tap pressed, releasing the _hold-tap_ before the interrupting keypress will invoke the tap behavior.
+
+<AnimationPlayer auto small name="balanced_hold_tap_up" />
+
+On the other hand, if the _interrupting key_ is released before the hold-tap, the hold behavior will be invoked.
+
+<AnimationPlayer auto small name="balanced_other_key_up" />
+
+</TabItem>
+
+<TabItem value="tap-preferred">
+
+The 'tap-preferred' flavor triggers the hold behavior when the [`tapping-term-ms`](#tapping-term-ms) has expired.
+
+<AnimationPlayer auto small name="tap_preferred_comparison" />
+
+As shown below, pressing another key within [`tapping-term-ms`](#tapping-term-ms) does not affect the hold-tap decision; only the press duration will decide if the 'tap-preferred' hold-tap is a 'hold' or a 'tap'.
+
+<AnimationPlayer auto small name="tap_preferred_hold_tap_up" />
+
+</TabItem>
+
+<TabItem value="tap-unless-interrupted">
+
+The press duration of the 'tap-unless-interrupted' flavor of hold-tap does not have an effect on the output: the 'tap' behavior will always be invoked.
+
+<AnimationPlayer auto small name="tap_unless_interrupted" />
+
+Only another key being pressed can invoke the 'hold' behavior.
+
+<AnimationPlayer auto small name="tap_unless_interrupted_invoke_hold" />
+
+</TabItem>
+
+</Tabs>
 
 ### Basic usage
 
@@ -43,7 +91,7 @@ For basic usage, please see the [mod-tap](mod-tap.md) and [layer-tap](layers.md#
 
 #### `tapping-term-ms`
 
-Defines how long a key must be pressed to trigger Hold behavior.
+Defines how long a key must be pressed to trigger the 'hold' behavior.
 
 #### `quick-tap-ms`
 
