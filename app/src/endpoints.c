@@ -24,6 +24,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define DEFAULT_ENDPOINT                                                                           \
     COND_CODE_1(IS_ENABLED(CONFIG_ZMK_BLE), (ZMK_ENDPOINT_BLE), (ZMK_ENDPOINT_USB))
 
+static enum zmk_endpoint last_endpoint = DEFAULT_ENDPOINT;
 static enum zmk_endpoint current_endpoint = DEFAULT_ENDPOINT;
 static enum zmk_endpoint preferred_endpoint =
     ZMK_ENDPOINT_USB; /* Used if multiple endpoints are ready */
@@ -62,6 +63,8 @@ int zmk_endpoints_select(enum zmk_endpoint endpoint) {
     return 0;
 }
 
+enum zmk_endpoint zmk_last_endpoint() { return last_endpoint; }
+enum zmk_endpoint zmk_preferred_endpoint() { return preferred_endpoint; }
 enum zmk_endpoint zmk_endpoints_selected() { return current_endpoint; }
 
 int zmk_endpoints_toggle() {
@@ -240,6 +243,7 @@ static void update_current_endpoint() {
         /* Cancel all current keypresses so keys don't stay held on the old endpoint. */
         disconnect_current_endpoint();
 
+        last_endpoint = current_endpoint;
         current_endpoint = new_endpoint;
         LOG_INF("Endpoint changed: %d", current_endpoint);
 

@@ -39,6 +39,7 @@ module.exports = {
       "behaviors/reset",
       "behaviors/bluetooth",
       "behaviors/outputs",
+      "behaviors/last-device",
       "behaviors/underglow",
       "behaviors/backlight",
       "behaviors/power",
