@@ -131,17 +131,20 @@ static struct led_rgb hsb_to_rgb(struct zmk_led_hsb hsb) {
 }
 
 static void zmk_rgb_underglow_effect_solid() {
+    struct led_rgb rgb = hsb_to_rgb(hsb_scale_min_max(state.color));
+
     for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        pixels[i] = hsb_to_rgb(hsb_scale_min_max(state.color));
+        pixels[i] = rgb;
     }
 }
 
 static void zmk_rgb_underglow_effect_breathe() {
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        struct zmk_led_hsb hsb = state.color;
-        hsb.b = abs(state.animation_step - 1200) / 12;
+    struct zmk_led_hsb hsb = state.color;
+    hsb.b = abs(state.animation_step - 1200) / 12;
+    struct led_rgb rgb = hsb_to_rgb(hsb_scale_zero_max(hsb));
 
-        pixels[i] = hsb_to_rgb(hsb_scale_zero_max(hsb));
+    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+        pixels[i] = rgb;
     }
 
     state.animation_step += state.animation_speed * 10;
@@ -152,11 +155,12 @@ static void zmk_rgb_underglow_effect_breathe() {
 }
 
 static void zmk_rgb_underglow_effect_spectrum() {
-    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
-        struct zmk_led_hsb hsb = state.color;
-        hsb.h = state.animation_step;
+    struct zmk_led_hsb hsb = state.color;
+    hsb.h = state.animation_step;
+    struct led_rgb rgb = hsb_to_rgb(hsb_scale_min_max(hsb));
 
-        pixels[i] = hsb_to_rgb(hsb_scale_min_max(hsb));
+    for (int i = 0; i < STRIP_NUM_PIXELS; i++) {
+        pixels[i] = rgb;
     }
 
     state.animation_step += state.animation_speed;
