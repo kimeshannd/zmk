@@ -29,34 +29,35 @@ int battery_channel_get(const struct battery_value *value, enum sensor_channel c
     return 0;
 }
 
-typedef struct {
-    int16_t millivolts;
-    float slope;
-    float offset;
-} batt_est_formula;
-
-uint8_t lithium_ion_mv_to_pct(int16_t bat_mv) {
+uint8_t lithium_ion_mv_to_pct(int16_t batt_mv) {
     // Lookup table of slope formulas for calculating remaining battery capacity.
     // The original values used to calculate slopes come from:
     //
     //       https://blog.ampow.com/lipo-voltage-chart/
-
-    const batt_est_formula lipo_formula_lookup[9] = {
-        {.millivolts = 4200, .slope = 0, .offset = 100},
-        {.millivolts = 4150, .slope = 0.1, .offset = -320},
-        {.millivolts = 4110, .slope = 0.125, .offset = -423.75},
-        {.millivolts = 4020, .slope = 0.111, .offset = -366.22},
-        {.millivolts = 3870, .slope = 0.133, .offset = -454.68},
-        {.millivolts = 3690, .slope = 0.278, .offset = -1015.84},
-        {.millivolts = 3610, .slope = 0.063, .offset = -222.47},
-        {.millivolts = 3270, .slope = 0.015, .offset = -48.09},
+    //
+    struct lookup_point {
+        float millivolts;
+        float percent;
     };
 
-    for (int i = 0; i < 9; i++) {
-        batt_est_formula current_formula = lipo_formula_lookup[i];
-        if (bat_mv >= current_formula.millivolts) {
-            float capacity = bat_mv * current_formula.slope + current_formula.offset;
-            return (uint8_t)capacity;
+    static const struct lookup_point battery_lookup[] = {
+        {.millivolts = 4200, .percent = 100}, {.millivolts = 3870, .percent = 60},
+        {.millivolts = 3690, .percent = 10},  {.millivolts = 3610, .percent = 5},
+        {.millivolts = 3270, .percent = 0},
+    };
+
+    if (batt_mv > 4200) {
+        return 100;
+    }
+
+    for (int i = 0; i < ARRAY_SIZE(battery_lookup); i++) {
+        struct lookup_point one = battery_lookup[i - 1];
+        struct lookup_point two = battery_lookup[i];
+        if (batt_mv >= two.millivolts) {
+            float slope = (one.percent - two.percent) / (one.millivolts - two.millivolts);
+            float offset = one.percent - slope * one.millivolts;
+            float batt_percent = (slope * batt_mv) + offset;
+            return (uint8_t)batt_percent;
         }
     }
 
