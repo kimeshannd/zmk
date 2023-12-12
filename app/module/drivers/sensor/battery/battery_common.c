@@ -50,7 +50,7 @@ uint8_t lithium_ion_mv_to_pct(int16_t batt_mv) {
         return 100;
     }
 
-    for (int i = 0; i < ARRAY_SIZE(battery_lookup); i++) {
+    for (int i = 1; i < ARRAY_SIZE(battery_lookup); i++) {
         struct lookup_point one = battery_lookup[i - 1];
         struct lookup_point two = battery_lookup[i];
         if (batt_mv >= two.millivolts) {
