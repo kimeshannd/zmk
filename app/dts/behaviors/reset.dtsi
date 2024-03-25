@@ -8,13 +8,15 @@
 
 / {
     behaviors {
-        // Behavior can be invoked on peripherals, so name must be <= 8 characters.
+        // Behavior can be invoked on peripherals, so name must be <= 8 characters
+        // and cannot be /omit-if-no-ref/
         sys_reset: sysreset {
             compatible = "zmk,behavior-reset";
             #binding-cells = <0>;
         };
 
-        // Behavior can be invoked on peripherals, so name must be <= 8 characters.
+        // Behavior can be invoked on peripherals, so name must be <= 8 characters
+        // and cannot be /omit-if-no-ref/
         bootloader: bootload {
             compatible = "zmk,behavior-reset";
             type = <RST_UF2>;

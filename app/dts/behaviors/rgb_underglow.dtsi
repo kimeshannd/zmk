@@ -6,7 +6,8 @@
 
 / {
     behaviors {
-        // Behavior can be invoked on peripherals, so name must be <= 8 characters.
+        // Behavior can be invoked on peripherals, so name must be <= 8 characters
+        // and cannot be /omit-if-no-ref/
         rgb_ug: rgb_ug {
             compatible = "zmk,behavior-rgb-underglow";
             #binding-cells = <2>;
