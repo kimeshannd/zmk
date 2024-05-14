@@ -326,10 +326,6 @@ int zmk_ble_prof_disconnect(uint8_t index) {
     result = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
     LOG_DBG("Disconnected from profile %d: %d", index, result);
 
-    raise_profile_changed_event();
-    // `raise_profile_changed_event` actually does `raise_zmk_ble_active_profile_changed`
-    // should `profile_changed` and `active_profile_changed` be two separate events?
-
     bt_conn_unref(conn);
     return result;
 }
