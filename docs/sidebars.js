@@ -156,6 +156,7 @@ module.exports = {
             "development/hardware-integration/encoders",
             "development/hardware-integration/soft-off-setup",
             "development/hardware-integration/pointing",
+            "development/hardware-integration/battery",
           ],
         },
         {
