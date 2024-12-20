@@ -508,7 +508,7 @@ static bool is_key_part_of_any_combo(int32_t position) {
 
 static int position_state_up(const zmk_event_t *ev, struct zmk_position_state_changed *data) {
     // Check if the released key is part of any combo candidate or active combo
-    if (is_key_part_of_any_combo(data->position)) {
+    if (is_key_part_of_candidate(data->position)) {
         int released_keys = cleanup();
         if (release_combo_key(data->position, data->timestamp)) {
             return ZMK_EV_EVENT_HANDLED;
@@ -521,7 +521,12 @@ static int position_state_up(const zmk_event_t *ev, struct zmk_position_state_ch
             ZMK_EVENT_RAISE(dupe_ev);
             return ZMK_EV_EVENT_CAPTURED;
         }
+    } else if (is_key_part_of_active_combo(data->position)) {
+        if (release_combo_key(data->position, data->timestamp)) {
+            return ZMK_EV_EVENT_HANDLED;
+        }
     }
+
     release_pressed_key(data->position);
     return ZMK_EV_EVENT_BUBBLE;
 }
